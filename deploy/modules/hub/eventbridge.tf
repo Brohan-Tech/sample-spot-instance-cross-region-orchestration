@@ -57,7 +57,7 @@ module "hub_eventbridge" {
           input_paths = {
             "region" = "$.detail.region"
           }
-          input_template = "{\"exclude_region\": [<region>]}"
+          input_template = "{\"exclude_regions\": [\"<region>\"]}"
         }
       }
     ],

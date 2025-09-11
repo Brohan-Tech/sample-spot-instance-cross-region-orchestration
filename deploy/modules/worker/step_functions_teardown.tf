@@ -12,8 +12,16 @@ module "teardown_instance_step_function" {
   # IAM role policies
   attach_policy_statements = true
   policy_statements = [
-    local.common_iam_policies.autoscaling,
-    local.common_iam_policies.ecs_tasks
+    {
+      effect    = "Allow"
+      actions   = ["autoscaling:SetDesiredCapacity"]
+      resources = [module.autoscaling.autoscaling_group_arn]
+    },
+    {
+      effect    = "Allow"
+      actions   = ["ecs:ListTasks", "ecs:StopTask"]
+      resources = ["*"]
+    }
   ]
 
   logging_configuration = {
@@ -36,9 +44,10 @@ module "teardown_instance_step_function" {
         Type = "Choice"
         Choices = [
           {
-            Variable  = "$.taskArns[0]"
-            IsPresent = true
-            Next      = "StopTasks"
+            Variable      = "$.taskArns"
+            IsPresent     = true
+            StringMatches = "*"
+            Next          = "StopTasks"
           }
         ],
         Default = "SetASGCapacityToZero"

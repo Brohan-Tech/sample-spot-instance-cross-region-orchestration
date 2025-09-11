@@ -10,12 +10,36 @@ module "capacity_monitor_step_function" {
 
   attach_policy_statements = true
   policy_statements = [
-    local.common_iam_policies.autoscaling,
-    local.common_iam_policies.ec2_describe,
-    local.common_iam_policies.events,
-    local.common_iam_policies.lambda,
-    local.common_iam_policies.iam_pass,
-    local.common_iam_policies.states
+    {
+      effect    = "Allow"
+      actions   = ["autoscaling:DescribeAutoScalingGroups"]
+      resources = [module.autoscaling.autoscaling_group_arn]
+    },
+    {
+      effect    = "Allow"
+      actions   = ["ec2:DescribeInstances"]
+      resources = ["*"]
+    },
+    {
+      effect    = "Allow"
+      actions   = ["events:PutEvents"]
+      resources = ["arn:aws:events:*:${data.aws_caller_identity.current.account_id}:event-bus/default"]
+    },
+    {
+      effect    = "Allow"
+      actions   = ["lambda:InvokeFunction"]
+      resources = [module.instance_details_lambda.lambda_function_arn]
+    },
+    {
+      effect    = "Allow"
+      actions   = ["iam:PassRole"]
+      resources = ["*"]
+    },
+    {
+      effect    = "Allow"
+      actions   = ["states:StartExecution"]
+      resources = ["arn:aws:states:*:${data.aws_caller_identity.current.account_id}:stateMachine:${var.prefix}-*"]
+    }
   ]
 
   logging_configuration = {

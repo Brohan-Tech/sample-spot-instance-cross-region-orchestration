@@ -3,6 +3,7 @@ import os
 from datetime import datetime, timedelta, timezone
 
 import boto3
+from botocore.exceptions import ClientError
 
 ec2 = boto3.client("ec2")
 
@@ -18,12 +19,15 @@ def get_region_recommendation(regions: list, instance_type: str) -> str:
             or None if no valid scores found
    """
 
-    res = ec2.get_spot_placement_scores(
-        InstanceTypes=[instance_type],
-        RegionNames=regions,
-        TargetCapacityUnitType="units",
-        TargetCapacity=1,
-    )
+    try:
+        res = ec2.get_spot_placement_scores(
+            InstanceTypes=[instance_type],
+            RegionNames=regions,
+            TargetCapacityUnitType="units",
+            TargetCapacity=1,
+        )
+    except ClientError:
+        return None
     scores = res["SpotPlacementScores"]
     print(f"SpotPlacementScores: {scores}")
 
@@ -42,11 +46,14 @@ def get_region_recommendation(regions: list, instance_type: str) -> str:
     # there are multi suitable regions, check the cheap-est one by checking spot pricing history
     region_prices = []
     for region in suitable_regions:
-        res = boto3.client("ec2", region_name=region).describe_spot_price_history(
-            InstanceTypes=[instance_type],
-            StartTime=(datetime.now(timezone.utc) - timedelta(hours=1)).isoformat(),
-            EndTime=datetime.now(timezone.utc).isoformat(),
-        )
+        try:
+            res = boto3.client("ec2", region_name=region).describe_spot_price_history(
+                InstanceTypes=[instance_type],
+                StartTime=(datetime.now(timezone.utc) - timedelta(hours=1)).isoformat(),
+                EndTime=datetime.now(timezone.utc).isoformat(),
+            )
+        except ClientError:
+            continue
         prices = list(
             map(lambda x: [x["SpotPrice"], x["Timestamp"]], res["SpotPriceHistory"])
         )
@@ -79,8 +86,12 @@ def handler(event, _):
         print(f"Using configured regions: {all_regions}")
     else:
         # If ALL_REGIONS not set, get all available regions from AWS
-        all_regions = [region['RegionName'] for region in ec2.describe_regions()['Regions']]
-        print(f"Using all available AWS regions: {all_regions}")
+        try:
+            all_regions = [region['RegionName'] for region in ec2.describe_regions()['Regions']]
+            print(f"Using all available AWS regions: {all_regions}")
+        except ClientError:
+            print("Failed to get regions, using default set")
+            all_regions = ["us-east-1", "us-west-2", "eu-west-1"]
 
     # Get excluded regions from event, default to empty list if not provided
     exclude = event.get("exclude_regions", [])
@@ -97,10 +108,13 @@ def handler(event, _):
         return None
 
     print(f"Searching for spot instances in regions: {regions}")
-    result = get_region_recommendation(regions, instance_type)
-    print(f"Recommended region: {result}")
-
-    return {"region": result}
+    try:
+        result = get_region_recommendation(regions, instance_type)
+        print(f"Recommended region: {result}")
+        return {"region": result}
+    except Exception:
+        print("Error finding optimal region")
+        return {"region": None}
 
 
 if __name__ == "__main__":

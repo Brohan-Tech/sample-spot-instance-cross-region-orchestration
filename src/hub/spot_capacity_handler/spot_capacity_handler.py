@@ -65,27 +65,35 @@ def lambda_handler(event, context):
         # Process based on detail-type
         if detail_type == 'SpotCapacityFulfilled':
             # Send success to Step Functions
-            logger.info(f"Sending success for task token: {task_token}")
-            sfn_client.send_task_success(
-                taskToken=task_token,
-                output=json.dumps({
-                    'status': 'success',
-                    'region': detail.get('region', 'unknown'),
-                    'operation': detail.get('operation', 'unknown')
-                })
-            )
+            logger.info(f"Sending success for task token: {task_token[:8]}...{task_token[-4:]}")
+            try:
+                sfn_client.send_task_success(
+                    taskToken=task_token,
+                    output=json.dumps({
+                        'status': 'success',
+                        'region': detail.get('region', 'unknown'),
+                        'operation': detail.get('operation', 'unknown')
+                    })
+                )
+            except Exception as e:
+                logger.error(f"Failed to send task success: {str(e)}")
+                raise
             message = "Successfully sent task success"
         else:  # SpotCapacityNotFulfilled
             # Send failure to Step Functions
-            logger.info(f"Sending failure for task token: {task_token}")
-            sfn_client.send_task_failure(
-                taskToken=task_token,
-                error='SpotCapacityNotFulfilled',
-                cause=json.dumps({
-                    'region': detail.get('region', 'unknown'),
-                    'operation': detail.get('operation', 'unknown')
-                })
-            )
+            logger.info(f"Sending failure for task token: {task_token[:8]}...{task_token[-4:]}")
+            try:
+                sfn_client.send_task_failure(
+                    taskToken=task_token,
+                    error='SpotCapacityNotFulfilled',
+                    cause=json.dumps({
+                        'region': detail.get('region', 'unknown'),
+                        'operation': detail.get('operation', 'unknown')
+                    })
+                )
+            except Exception as e:
+                logger.error(f"Failed to send task failure: {str(e)}")
+                raise
             message = "Successfully sent task failure"
 
         return {

@@ -17,13 +17,41 @@ module "launch_instance_step_function" {
   # IAM role policies
   attach_policy_statements = true
   policy_statements = [
-    local.common_iam_policies.autoscaling,
-    local.common_iam_policies.ec2_describe,
-    local.common_iam_policies.ssm,
-    local.common_iam_policies.ecs_tasks,
-    local.common_iam_policies.events,
-    local.common_iam_policies.states,
-    local.common_iam_policies.iam_pass
+    {
+      effect    = "Allow"
+      actions   = ["autoscaling:SetDesiredCapacity"]
+      resources = [module.autoscaling.autoscaling_group_arn]
+    },
+    {
+      effect    = "Allow"
+      actions   = ["ec2:DescribeInstances"]
+      resources = ["*"]
+    },
+    {
+      effect    = "Allow"
+      actions   = ["ssm:GetParameter", "ssm:PutParameter"]
+      resources = ["arn:aws:ssm:*:${data.aws_caller_identity.current.account_id}:parameter/${var.prefix}/*"]
+    },
+    {
+      effect    = "Allow"
+      actions   = ["ecs:RunTask", "ecs:ListTasks", "ecs:StopTask"]
+      resources = ["*"]
+    },
+    {
+      effect    = "Allow"
+      actions   = ["events:PutEvents"]
+      resources = ["arn:aws:events:*:${data.aws_caller_identity.current.account_id}:event-bus/default"]
+    },
+    {
+      effect    = "Allow"
+      actions   = ["states:StartExecution"]
+      resources = ["arn:aws:states:*:${data.aws_caller_identity.current.account_id}:stateMachine:${var.prefix}-*"]
+    },
+    {
+      effect    = "Allow"
+      actions   = ["iam:PassRole"]
+      resources = ["*"]
+    }
   ]
 
   definition = jsonencode({

@@ -238,7 +238,7 @@ resource "aws_ecs_task_definition" "main" {
   container_definitions = jsonencode([
     {
       name      = "${var.prefix}"
-      image     = "600413481647.dkr.ecr.us-west-2.amazonaws.com/sglang:0.4.3.post2-efa"
+      image     = var.container_image
       essential = true
 
       environment = [

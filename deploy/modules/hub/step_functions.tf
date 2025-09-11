@@ -54,7 +54,7 @@ module "spot_orchestrator" {
           enabled = "{% $states.result.Parameter.Value %}"
         }
         Assign = {
-          exclude_regions = "{% $states.input.exclude_region %}"
+          exclude_regions = "{% $states.input.exclude_regions %}"
         }
         Catch = [{
           ErrorEquals = ["States.ALL"]
@@ -69,7 +69,7 @@ module "spot_orchestrator" {
       CheckEnabled = {
         Type = "Choice"
         Choices = [{
-          Condition = "{% $states.input.enabled = 'false' %}"
+          Condition = "{% enabled = 'false' %}"
           Next      = "Success"
         }]
         Default = "FindOptimalRegion"

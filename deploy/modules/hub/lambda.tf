@@ -44,14 +44,14 @@ module "spot_finder_lambda" {
       actions = [
         "ssm:GetParameter"
       ],
-      resources = ["*"]
+      resources = ["arn:aws:ssm:*:${data.aws_caller_identity.current.account_id}:parameter/${var.prefix}/*"]
     },
     states_permissions = {
       effect = "Allow",
       actions = [
         "states:StartExecution"
       ],
-      resources = ["*"]
+      resources = ["arn:aws:states:*:${data.aws_caller_identity.current.account_id}:stateMachine:${var.prefix}-*"]
     }
   }
 
@@ -89,7 +89,7 @@ module "get_instance_details_lambda" {
       actions = [
         "ssm:GetParameter"
       ],
-      resources = ["*"]
+      resources = ["arn:aws:ssm:*:${data.aws_caller_identity.current.account_id}:parameter/${var.prefix}/*"]
     }
   }
 
@@ -140,14 +140,14 @@ module "toggle_provisioning_lambda" {
         "states:ListExecutions",
         "states:StopExecution"
       ],
-      resources = ["*"]
+      resources = ["arn:aws:states:*:${data.aws_caller_identity.current.account_id}:stateMachine:${var.prefix}-*"]
     },
     params_permissions = {
       effect = "Allow",
       actions = [
         "ssm:PutParameter"
       ],
-      resources = ["*"]
+      resources = ["arn:aws:ssm:*:${data.aws_caller_identity.current.account_id}:parameter/${var.prefix}/*"]
     },
     eb_permissions = {
       effect = "Allow",
@@ -198,7 +198,7 @@ module "spot_capacity_handler_lambda" {
         "states:SendTaskSuccess",
         "states:SendTaskFailure"
       ],
-      resources = ["*"]
+      resources = ["arn:aws:states:*:${data.aws_caller_identity.current.account_id}:*"]
     }
   }
 

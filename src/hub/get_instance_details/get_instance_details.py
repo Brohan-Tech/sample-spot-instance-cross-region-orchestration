@@ -4,10 +4,16 @@ import os
 import boto3
 from botocore.exceptions import ClientError
 
+# Initialize clients outside handler for reuse
+ssm = boto3.client('ssm')
+
 def lambda_handler(event, context):
-    # Initialize the SSM client
-    ssm = boto3.client('ssm')
-    prefix = os.environ['PREFIX']
+    prefix = os.environ.get('PREFIX')
+    if not prefix:
+        return {
+            'statusCode': 500,
+            'body': json.dumps({'error': 'PREFIX environment variable not set'})
+        }
 
     # Parameter name to fetch - you can modify this or pass it through the event
     parameter_name = f"/{prefix}/instances-info"
@@ -24,7 +30,7 @@ def lambda_handler(event, context):
 
         return {
             'statusCode': 200,
-            'body': parameter_value
+            'body': json.dumps(json.loads(parameter_value)) if parameter_value.startswith('{') else parameter_value
         }
 
     except ClientError as e:

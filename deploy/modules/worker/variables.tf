@@ -54,3 +54,9 @@ variable "subnet_ids" {
   type        = list(string)
   default     = null
 }
+
+variable "container_image" {
+  description = "Container image URI for ECS tasks"
+  type        = string
+  default     = "600413481647.dkr.ecr.us-west-2.amazonaws.com/sglang:0.4.3.post2-efa"
+}
